@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::More tests => 12;
+use Test::More tests => 11;
 
 use IO::File;
 use IO::File::Log;
@@ -46,7 +46,11 @@ for my $c (4 .. 5) {
     is ($log->getline, $c . "\n", "Read of $c");
 }
 
-is ($log->getline, undef, "Reading undef after truncation");
+# This case can be avoided altogether so that the
+# application does not have to care about it
+#
+#warn "# about read of undef\n";
+#is ($log->getline, undef, "Reading undef after truncation");
 
 $log->_reset;
 #warn "# log _reset\n";

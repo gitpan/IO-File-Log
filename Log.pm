@@ -8,7 +8,7 @@ use IO::File;
 use IO::Select;
 use vars qw($AUTOLOAD);
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 our $TIMEOUT = 5;		# Seconds between checks for changed file
 
@@ -81,12 +81,14 @@ sub _loop_on_end {
 				# checking for a new file...
     
     while (1) {
-	unless (#-f $self->{file} and 
-		_dcomp([_stat($self->{file})], $self->{stat})) {
 
-#	    warn "# ostat = (", join(',', @{$self->{stat}}), ")\n";
-#	    warn "# nstat = (", join(',', _stat($self->{file})), ")\n";
+#	warn "# ostat = (", join(',', @{$self->{stat}}), ")\n";
+#	warn "# nstat = (", join(',', (stat($self->{file}))[0, 1, 6]), ")\n";
 
+	if (-f $self->{file} and 
+	    ! _dcomp([(stat($self->{file}))[0, 1, 6]], 
+		     $self->{stat})) 
+	{
 #	    warn "# File changed\n";
 
 	    $self->_reset;
@@ -99,10 +101,20 @@ sub _loop_on_end {
 	$self->{fh}->clearerr;
 	seek($self->{fh}, 0, 1);
 
-	for my $fh ($self->{sel}->can_read($TIMEOUT)) {
+	my $fh = ($self->{sel}->can_read($TIMEOUT))[0];
+
+#	warn "# select returned\n";
+
+	unless (defined $fh) {
+#	    warn "#select returned undef\n";
+	    next;
+	}
+
+	unless ($fh->eof) {
 	    return if ($fh eq $self->{fh});
 	}
 
+	sleep $TIMEOUT;
     }
 
 }
@@ -277,6 +289,14 @@ Original version; created by h2xs 1.1.1.4 with options
 	1.00
 
 Tested under Darwin (Mac OS X 10.1.3).
+
+=item 1.01
+
+Fixes for cases where log rotation is too slow (ie, a lot of time
+passes between the C<rename()> of the existing log file and its
+creation). This produced a small change on semantics, where an
+operation blocked at the enf-of-file will return as soon as the new
+file is created and data is written to it.
 
 =back
 

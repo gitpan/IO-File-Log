@@ -8,3 +8,4 @@ t/grow.t
 t/sgrow.t
 t/trunc.t
 t/rotate.t
+t/srotate.t
